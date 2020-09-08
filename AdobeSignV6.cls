@@ -14,7 +14,7 @@ public class AdobeSignV6 {
     private static final string API_SHARD = 'na1';
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-    
 //  Could be echosign.com or the newly assigned adobesign.com
-    private static final string API_HOSTNAME = 'adobesign.com';
+    private static final string API_HOSTNAME = 'echosign.com';
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-    
 //  Could be moved and accessed via custom settings or custom metadatatype
 //  Instructions: https://helpx.adobe.com/sign/kb/how-to-create-an-integration-key.html
@@ -83,4 +83,59 @@ public class AdobeSignV6 {
         return req;
     }
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-    
+//  Collect form data from Adobe Sign API
+//  Return form data as map with label/value
+//    
+    public static Map<String,String> get_FormData( String agreementId ) {
+        Map<String,String> response = new Map<String,String>();
+        for( AdobeSignv6_rest.formData_element d : get_agreement_formData( agreementId ).elements ) {
+            response.put( d.label, d.value );
+        }
+        return response;
+    }
+
+    private static AdobeSignv6_rest.formData get_agreement_formData( String agreementId ) {
+        AdobeSignv6_rest.formData response = new AdobeSignv6_rest.formData();
+        if( agreementId != null ) {
+            List<AdobeSignv6_rest.formData_element> elements = new List<AdobeSignv6_rest.formData_element>();
+            AdobeSignv6_rest.formData_element formData;
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint( 'https://api.' + API_SHARD +'.' + API_HOSTNAME + '/api/rest/' + API_VERSION + '/agreements/' + agreementId + '/formData' );
+            req.setMethod( 'GET' );
+            req.setHeader( 'Content-Type', 'application/json' );
+            req.setHeader( 'Access-Token', INTEGRATION_KEY );
+            system.debug( agreementId );
+            req.setHeader( 'agreementId', agreementId );
+            Http http = new Http();
+            
+            HttpResponse res; 
+            
+            if( !test.isRunningTest() ) { res = http.send( req );
+            } else {
+                res = new HttpResponse();
+                res.setStatusCode(200);
+                res.setBody('label1,label2\nvalue1,value2');
+            }
+            
+            response.status = res.getStatus();
+            if( res.getStatusCode() == 200 ) {
+                List<String> f_keys = res.getBody().split('\n').get(0).split(',');
+                List<String> f_vals = res.getBody().split('\n').get(1).split(',');
+                for (Integer i = 0, j = 0; i < f_keys.size(); i++) {
+                    formData = new AdobeSignv6_rest.formData_element();
+                    formData.label = f_keys.get(i).remove('"').capitalize();
+                    formData.value = f_vals.get(i).remove('"');
+                    if( formData.value != '' ) {
+                        elements.add(formData);
+                    }    
+                }
+            } else {
+                AdobeSignv6_rest.errorResponse status = (AdobeSignv6_rest.errorResponse)JSON.deserialize(res.getBody(), AdobeSignv6_rest.errorResponse.class);
+                response.status = status.code + ' : ' + status.message;
+            }
+            response.elements = elements;
+        }
+        return response;
+    }
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-        
 }

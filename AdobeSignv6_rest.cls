@@ -121,4 +121,17 @@ public class AdobeSignv6_rest {
         public String esignUrl;
     }
 
+    public class formData {
+        public string status { get; set; }
+        public List<formData_element> elements{ get; set; }
+    }
+    public class formData_element {
+        public string label { get; set; }
+        public string value { get; set; }
+    }
+    public class errorResponse {
+        public string code { get; set; }
+        public string message { get; set; }
+    }
+
 }

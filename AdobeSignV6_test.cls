@@ -69,5 +69,22 @@ private class AdobeSignV6_test {
         }
     }
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  	
-
+    @isTest
+	private static void test_get_formData_success() {
+        
+        Test.setMock(HttpCalloutMock.class, new Mock_formData());
+        Test.startTest();
+        Map<String,String> result = AdobeSignV6.get_FormData('test');
+        system.assertNotEquals( result, null );
+        Test.stopTest();   
+        
+	}
+	private class Mock_formData implements HttpCalloutMock {
+        public HTTPResponse respond(HTTPRequest req) {
+            HTTPResponse res = new HTTPResponse();
+            res.setBody( JSON.serialize( new AdobeSignv6_rest.formData() ) );
+            res.setStatusCode( 200 );
+            return res;
+        }
+    }
 }
